@@ -1,0 +1,41 @@
+import talib
+ 
+def initialize(context):  
+    context.security = symbol('AAPL')
+    set_benchmark(context.security)
+    
+    # Create a variable to track the date change
+    context.yesterday = None
+    
+    
+def handle_data(context, data):  
+    # added for comparison the standard ma
+    mavg_standard = data[context.security].mavg(11)
+    record(position=context.portfolio.positions[context.security].amount)
+    # Check for start of a new day
+    if get_datetime().date() == context.yesterday:
+        return
+    context.yesterday = get_datetime().date()
+    
+    price_history = history(bar_count=11, frequency='1d', field='price')  
+    maseries = price_history[context.security]  
+    maverage = talib.EMA(maseries, timeperiod=11)[-1]  
+    current_price = data[context.security].price  
+    position = context.portfolio.positions[context.security].amount
+ 
+    if current_price < maverage and position >= 0:  
+        order_target_percent(context.security, -1)  
+       # log.info("SHORT %s" % (context.security.symbol))  
+    # elif current_price > maverage and position <= 0:  
+        # order_target_percent(context.security, 0)  
+        # # log.info("COVER SHORT %s" % (context.security.symbol))  
+    if current_price > maverage and position <= 0:  
+        order_target_percent(context.security, 1)  
+       # log.info("LONG %s" % (context.security.symbol))  
+    # elif current_price < maverage and position >= 0:  
+        # order_target_percent(context.security, 0)  
+        # # log.info("COVER LONG %s" % (context.security.symbol)
+        
+    record(Price=current_price)
+    record(Ema=maverage)
+    record(MaStandard=mavg_standard)
